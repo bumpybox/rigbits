@@ -1,6 +1,12 @@
 import operator
+from functools import partial
+import json
 
 import pymel.core as pm
+from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
+
+from mgear.vendor.Qt import QtWidgets, QtCore
+from mgear.rigbits import facial_rigger
 
 
 def create_edge_joint(edge, up_vector_position):
@@ -165,3 +171,133 @@ def rename_by_position(nodes, tolerance=0.001, prefix="", suffix=""):
             object.name = object.name + suffix
 
         pm.rename(object.node, object.name)
+
+
+class settings_dialog(MayaQWidgetDockableMixin, QtWidgets.QDialog):
+
+    def __init__(self, parent=None):
+        super(settings_dialog, self).__init__(parent)
+
+        self.setWindowFlags(QtCore.Qt.Window)
+        self.setAttribute(QtCore.Qt.WA_DeleteOnClose, 1)
+
+        self.main_layout = QtWidgets.QVBoxLayout()
+        self.setLayout(self.main_layout)
+
+        self.create_header_layout()
+        self.create_body_layout()
+        self.create_footer_layout()
+
+    def create_header_layout(self):
+
+        # prefix
+        self.prefix_label = QtWidgets.QLabel("Prefix:")
+        self.prefix = QtWidgets.QLineEdit()
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(self.prefix_label)
+        layout.addWidget(self.prefix)
+        self.main_layout.addLayout(layout)
+
+        # control_size
+        self.control_size_label = QtWidgets.QLabel("Control Size:")
+        self.control_size = QtWidgets.QDoubleSpinBox()
+        self.control_size.setValue(1)
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(self.control_size_label)
+        layout.addWidget(self.control_size)
+        self.main_layout.addLayout(layout)
+
+        # setup_group
+        self.setup_group_label = QtWidgets.QLabel("Setup Group:")
+        self.setup_group = QtWidgets.QLineEdit()
+        self.setup_group_button = QtWidgets.QPushButton("<<")
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(self.setup_group_label)
+        layout.addWidget(self.setup_group)
+        layout.addWidget(self.setup_group_button)
+        self.main_layout.addLayout(layout)
+
+        self.setup_group_button.clicked.connect(
+            partial(self.populate_object, self.setup_group)
+        )
+
+        # controls_group
+        self.controls_group_label = QtWidgets.QLabel("Controls Group:")
+        self.controls_group = QtWidgets.QLineEdit()
+        self.controls_group_button = QtWidgets.QPushButton("<<")
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(self.controls_group_label)
+        layout.addWidget(self.controls_group)
+        layout.addWidget(self.controls_group_button)
+        self.main_layout.addLayout(layout)
+
+        self.controls_group_button.clicked.connect(
+            partial(self.populate_object, self.controls_group)
+        )
+
+        # controls_set
+        self.controls_set_label = QtWidgets.QLabel("Controls Set:")
+        self.controls_set = QtWidgets.QLineEdit()
+        self.controls_set_button = QtWidgets.QPushButton("<<")
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(self.controls_set_label)
+        layout.addWidget(self.controls_set)
+        layout.addWidget(self.controls_set_button)
+        self.main_layout.addLayout(layout)
+
+        self.controls_set_button.clicked.connect(
+            partial(self.populate_object, self.controls_set)
+        )
+
+    def create_body_layout(self):
+        pass
+
+    def create_footer_layout(self):
+        self.build_button = QtWidgets.QPushButton("Build")
+        self.main_layout.addWidget(self.build_button)
+        self.build_button.clicked.connect(self.build_rig)
+
+        self.import_button = QtWidgets.QPushButton("Import Config From Json")
+        self.main_layout.addWidget(self.import_button)
+        self.import_button.clicked.connect(self.import_settings)
+
+        self.export_button = QtWidgets.QPushButton("Export Config To Json")
+        self.main_layout.addWidget(self.export_button)
+        self.export_button.clicked.connect(self.export_settings)
+
+    def populate_object(self, line_edit):
+        selection = pm.selected()
+        if selection:
+            if len(selection) > 1:
+                pm.displayWarning(
+                    "Selected more and one object."
+                    " Getting first selected object."
+                )
+
+            line_edit.setText(selection[0].name())
+        else:
+            pm.displayWarning("No object selected.")
+
+    def build_rig(self):
+        pass
+
+    def export_settings(self):
+        data_string = json.dumps(
+            facial_rigger.lib.get_settings_from_widget(self),
+            indent=4,
+            sort_keys=True
+        )
+
+        file_path = facial_rigger.lib.get_file_path(self.filter, "save")
+        if not file_path:
+            return
+
+        with open(file_path, "w") as f:
+            f.write(data_string)
+
+    def import_settings(self):
+        file_path = facial_rigger.lib.get_file_path(self.filter, "open")
+        if not file_path:
+            return
+
+        facial_rigger.lib.import_settings_from_file(file_path, self)

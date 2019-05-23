@@ -2,13 +2,12 @@ from functools import partial
 import json
 
 import pymel.core as pm
-from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
 from mgear.core import skin, curve, icon
 from . import lib
-from mgear.rigbits import facial_rigger
-from mgear.vendor.Qt import QtCore, QtWidgets
+from mgear.vendor.Qt import QtWidgets
 import mgear.core.pyqt as gqt
+from mgear.rigbits import facial_rigger
 
 
 def rig(*args, **kwargs):
@@ -36,8 +35,8 @@ def _rig(mesh=None,
          main_control_frequency=1,
          prefix="shrinkwrap_rig",
          hook_up_parent=None,
-         size=1.0,
-         offset=0.0):
+         control_size=1.0,
+         controls_offset=0.0):
 
     results = {"setup_group": [], "controls_group": [], "controls_set": []}
 
@@ -108,7 +107,7 @@ def _rig(mesh=None,
         degree=1
     )
     curve.set_color(master_control, [1, 1, 0])
-    pm.move(master_control, [0, 0, offset], relative=True, objectSpace=True)
+    pm.move(master_control, [0, 0, controls_offset], relative=True, objectSpace=True)
     pm.makeIdentity(master_control, apply=True)
     master_control.resetFromRestPosition()
     results["controls_set"].append(master_control)
@@ -139,8 +138,8 @@ def _rig(mesh=None,
         pm.parent(control, group)
         pm.parent(group, master_control)
 
-        pm.move(control, [0, 0, offset], relative=True, objectSpace=True)
-        pm.scale(control, [size, size, size])
+        pm.move(control, [0, 0, controls_offset], relative=True, objectSpace=True)
+        pm.scale(control, [control_size, control_size, control_size])
         pm.makeIdentity(control, apply=True)
         control.resetFromRestPosition()
 
@@ -175,8 +174,8 @@ def _rig(mesh=None,
         pm.parent(control, group)
         pm.parent(group, master_control)
 
-        pm.move(control, [0, 0, offset], relative=True, objectSpace=True)
-        pm.scale(control, [size, size, size])
+        pm.move(control, [0, 0, controls_offset], relative=True, objectSpace=True)
+        pm.scale(control, [control_size, control_size, control_size])
         pm.makeIdentity(control, apply=True)
         control.resetFromRestPosition()
 
@@ -215,9 +214,7 @@ def _rig(mesh=None,
     return results
 
 
-class ui(MayaQWidgetDockableMixin, QtWidgets.QDialog):
-
-    valueChanged = QtCore.Signal(int)
+class ui(lib.settings_dialog):
 
     def __init__(self, parent=None):
         super(ui, self).__init__(parent)
@@ -226,22 +223,11 @@ class ui(MayaQWidgetDockableMixin, QtWidgets.QDialog):
             "Shrinkwrap Rigger Configuration .shrinkwrap (*.shrinkwrap)"
         )
 
-        self.create()
-
-    def create(self):
-
         self.setWindowTitle("Shrinkwrap Rigger")
-        self.setWindowFlags(QtCore.Qt.Window)
-        self.setAttribute(QtCore.Qt.WA_DeleteOnClose, 1)
 
-        self.create_layout()
-        self.create_connections()
+    def create_body_layout(self):
 
-    def create_layout(self):
-
-        main_layout = QtWidgets.QVBoxLayout()
-
-        # Geometry input controls
+        # mesh
         self.mesh_label = QtWidgets.QLabel("Mesh:")
         self.mesh = QtWidgets.QLineEdit()
         self.mesh_button = QtWidgets.QPushButton("<<")
@@ -249,8 +235,13 @@ class ui(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         layout.addWidget(self.mesh_label)
         layout.addWidget(self.mesh)
         layout.addWidget(self.mesh_button)
-        main_layout.addLayout(layout)
+        self.main_layout.addLayout(layout)
 
+        self.mesh_button.clicked.connect(
+            partial(self.populate_object, self.mesh)
+        )
+
+        # shrinkwrap_mesh
         self.shrinkwrap_mesh_label = QtWidgets.QLabel("Shrinkwrap Mesh:")
         self.shrinkwrap_mesh = QtWidgets.QLineEdit()
         self.shrinkwrap_mesh_button = QtWidgets.QPushButton("<<")
@@ -258,15 +249,21 @@ class ui(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         layout.addWidget(self.shrinkwrap_mesh_label)
         layout.addWidget(self.shrinkwrap_mesh)
         layout.addWidget(self.shrinkwrap_mesh_button)
-        main_layout.addLayout(layout)
+        self.main_layout.addLayout(layout)
 
+        self.shrinkwrap_mesh_button.clicked.connect(
+            partial(self.populate_object, self.shrinkwrap_mesh)
+        )
+
+        # main_control_start
         self.main_control_start_label = QtWidgets.QLabel("Main Control Start:")
         self.main_control_start = QtWidgets.QSpinBox()
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self.main_control_start_label)
         layout.addWidget(self.main_control_start)
-        main_layout.addLayout(layout)
+        self.main_layout.addLayout(layout)
 
+        # main_control_frequency
         self.main_control_frequency_label = QtWidgets.QLabel(
             "Main Control Frequency:"
         )
@@ -275,67 +272,20 @@ class ui(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self.main_control_frequency_label)
         layout.addWidget(self.main_control_frequency)
-        main_layout.addLayout(layout)
+        self.main_layout.addLayout(layout)
 
-        self.build_button = QtWidgets.QPushButton("Build")
-        main_layout.addWidget(self.build_button)
-
-        self.import_button = QtWidgets.QPushButton("Import Config From Json")
-        main_layout.addWidget(self.import_button)
-
-        self.export_button = QtWidgets.QPushButton("Export Config To Json")
-        main_layout.addWidget(self.export_button)
-
-        self.setLayout(main_layout)
-
-    def create_connections(self):
-        self.mesh_button.clicked.connect(
-            partial(self.populate_object, self.mesh)
+        # controls_offset
+        self.controls_offset_label = QtWidgets.QLabel(
+            "Controls Offset:"
         )
-        self.shrinkwrap_mesh_button.clicked.connect(
-            partial(self.populate_object, self.shrinkwrap_mesh)
-        )
-
-        self.build_button.clicked.connect(self.build_rig)
-        self.import_button.clicked.connect(self.import_settings)
-        self.export_button.clicked.connect(self.export_settings)
-
-    def populate_object(self, line_edit):
-        selection = pm.selected()
-        if selection:
-            if len(selection) > 1:
-                pm.displayWarning(
-                    "Selected more and one object."
-                    " Getting first selected object."
-                )
-
-            line_edit.setText(selection[0].name())
-        else:
-            pm.displayWarning("No object selected.")
+        self.controls_offset = QtWidgets.QDoubleSpinBox()
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(self.controls_offset_label)
+        layout.addWidget(self.controls_offset)
+        self.main_layout.addLayout(layout)
 
     def build_rig(self):
         rig(**facial_rigger.lib.get_settings_from_widget(self))
-
-    def export_settings(self):
-        data_string = json.dumps(
-            facial_rigger.lib.get_settings_from_widget(self),
-            indent=4,
-            sort_keys=True
-        )
-
-        file_path = facial_rigger.lib.get_file_path(self.filter, "save")
-        if not file_path:
-            return
-
-        with open(file_path, "w") as f:
-            f.write(data_string)
-
-    def import_settings(self):
-        file_path = facial_rigger.lib.get_file_path(self.filter, "open")
-        if not file_path:
-            return
-
-        facial_rigger.lib.import_settings_from_file(file_path, self)
 
 
 # Build from json file.
