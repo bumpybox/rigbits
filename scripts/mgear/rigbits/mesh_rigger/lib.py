@@ -207,6 +207,14 @@ class settings_dialog(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         layout.addWidget(self.control_size)
         self.main_layout.addLayout(layout)
 
+        # control_offset
+        self.control_offset_label = QtWidgets.QLabel("Control Offset:")
+        self.control_offset = QtWidgets.QDoubleSpinBox()
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(self.control_offset_label)
+        layout.addWidget(self.control_offset)
+        self.main_layout.addLayout(layout)
+
         # setup_group
         self.setup_group_label = QtWidgets.QLabel("Setup Group:")
         self.setup_group = QtWidgets.QLineEdit()
@@ -277,6 +285,13 @@ class settings_dialog(MayaQWidgetDockableMixin, QtWidgets.QDialog):
             line_edit.setText(selection[0].name())
         else:
             pm.displayWarning("No object selected.")
+
+    def populate_objects(self, line_edit):
+        selection = pm.selected(flatten=True)
+        if selection:
+            line_edit.setText(",".join([node.name() for node in selection]))
+        else:
+            pm.displayWarning("No objects selected.")
 
     def build_rig(self):
         pass

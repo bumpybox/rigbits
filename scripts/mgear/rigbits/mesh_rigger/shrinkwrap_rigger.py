@@ -36,7 +36,7 @@ def _rig(mesh=None,
          prefix="shrinkwrap_rig",
          hook_up_parent=None,
          control_size=1.0,
-         controls_offset=0.0):
+         control_offset=0.0):
 
     results = {"setup_group": [], "controls_group": [], "controls_set": []}
 
@@ -107,7 +107,12 @@ def _rig(mesh=None,
         degree=1
     )
     curve.set_color(master_control, [1, 1, 0])
-    pm.move(master_control, [0, 0, controls_offset], relative=True, objectSpace=True)
+    pm.move(
+        master_control,
+        [0, 0, control_offset],
+        relative=True,
+        objectSpace=True
+    )
     pm.makeIdentity(master_control, apply=True)
     master_control.resetFromRestPosition()
     results["controls_set"].append(master_control)
@@ -138,7 +143,12 @@ def _rig(mesh=None,
         pm.parent(control, group)
         pm.parent(group, master_control)
 
-        pm.move(control, [0, 0, controls_offset], relative=True, objectSpace=True)
+        pm.move(
+            control,
+            [0, 0, control_offset],
+            relative=True,
+            objectSpace=True
+        )
         pm.scale(control, [control_size, control_size, control_size])
         pm.makeIdentity(control, apply=True)
         control.resetFromRestPosition()
@@ -174,7 +184,12 @@ def _rig(mesh=None,
         pm.parent(control, group)
         pm.parent(group, master_control)
 
-        pm.move(control, [0, 0, controls_offset], relative=True, objectSpace=True)
+        pm.move(
+            control,
+            [0, 0, control_offset],
+            relative=True,
+            objectSpace=True
+        )
         pm.scale(control, [control_size, control_size, control_size])
         pm.makeIdentity(control, apply=True)
         control.resetFromRestPosition()
@@ -272,16 +287,6 @@ class ui(lib.settings_dialog):
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self.main_control_frequency_label)
         layout.addWidget(self.main_control_frequency)
-        self.main_layout.addLayout(layout)
-
-        # controls_offset
-        self.controls_offset_label = QtWidgets.QLabel(
-            "Controls Offset:"
-        )
-        self.controls_offset = QtWidgets.QDoubleSpinBox()
-        layout = QtWidgets.QHBoxLayout()
-        layout.addWidget(self.controls_offset_label)
-        layout.addWidget(self.controls_offset)
         self.main_layout.addLayout(layout)
 
     def build_rig(self):
