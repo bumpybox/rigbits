@@ -92,15 +92,19 @@ def _rig(mesh=None,
     center_position = clusTfm.rotatePivot.get()
     pm.delete(clusTfm)
 
-    master_parent = pm.group(name="{0}_master_grp".format(prefix), empty=True)
-    master_parent.setTranslation(center_position)
+    master_group = pm.group(name="{0}_master_grp".format(prefix), empty=True)
+    master_group.setTranslation(center_position)
     if hook_up_parent:
-        pm.parentConstraint(master_parent, hook_up_parent)
-    results["controls_group"].append(master_parent)
+        pm.parentConstraint(master_group, hook_up_parent)
+    results["controls_group"].append(master_group)
+
+    master_null = pm.duplicate(master_group)[0]
+    pm.rename(master_null, "{0}_master_null".format(prefix))
+    pm.parent(master_null, master_group)
 
     points = [x.getTranslation(space="world") for x in joints]
     master_control = curve.addCurve(
-        master_parent,
+        master_null,
         "{0}_master_ctrl".format(prefix),
         points,
         close=True,
@@ -131,6 +135,12 @@ def _rig(mesh=None,
         )
         group.setMatrix(joint.getMatrix())
 
+        null = pm.group(
+            name="{0}_main{1:0>2}_null".format(prefix, joints.index(joint)),
+            empty=True
+        )
+        null.setMatrix(joint.getMatrix())
+
         control = icon.create(
             name="{0}_main{1:0>2}_ctrl".format(prefix, joints.index(joint)),
             icon="cube",
@@ -140,8 +150,9 @@ def _rig(mesh=None,
         pm.rotate(control, [0, 0, 90], relative=True, objectSpace=True)
         results["controls_set"].append(control)
 
-        pm.parent(control, group)
         pm.parent(group, master_control)
+        pm.parent(null, group)
+        pm.parent(control, null)
 
         pm.move(
             control,
@@ -152,9 +163,7 @@ def _rig(mesh=None,
         pm.scale(control, [control_size, control_size, control_size])
         pm.makeIdentity(control, apply=True)
         control.resetFromRestPosition()
-
         pm.parentConstraint(control, joint)
-
         parent_controls.append(control)
 
     # Child controls
@@ -172,6 +181,12 @@ def _rig(mesh=None,
         )
         group.setMatrix(joint.getMatrix())
 
+        null = pm.group(
+            name="{0}_main{1:0>2}_null".format(prefix, joints.index(joint)),
+            empty=True
+        )
+        null.setMatrix(joint.getMatrix())
+
         control = icon.create(
             name="{0}_main{1:0>2}_ctrl".format(prefix, joints.index(joint)),
             icon="sphere",
@@ -181,8 +196,9 @@ def _rig(mesh=None,
         pm.rotate(control, [0, 0, 90], relative=True, objectSpace=True)
         results["controls_set"].append(control)
 
-        pm.parent(control, group)
         pm.parent(group, master_control)
+        pm.parent(null, group)
+        pm.parent(control, null)
 
         pm.move(
             control,
