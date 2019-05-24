@@ -24,9 +24,7 @@ def rig(*args, **kwargs):
     prefix = ""
     if "prefix" in kwargs:
         prefix = kwargs["prefix"] + "_"
-    lib.rename_by_position(
-        nodes, prefix=prefix, suffix="_ctrl"
-    )
+    lib.rename_by_position(nodes, prefix=prefix, suffix="_ctrl")
 
 
 def _rig(mesh=None,
@@ -210,7 +208,7 @@ def _rig(mesh=None,
         pm.makeIdentity(control, apply=True)
         control.resetFromRestPosition()
 
-        pm.parentConstraint(control, joint)
+        parent_constraint = pm.parentConstraint(control, joint)
         weight = parent_index - (
             float(joints.index(joint)) / main_control_frequency
         )
@@ -226,6 +224,9 @@ def _rig(mesh=None,
             weight=weight,
             maintainOffset=True
         )
+        # Needs to the shortest interpType because else left/right does not act
+        # the same.
+        parent_constraint.interpType.set(2)
 
     # Setup shrinkwrap
     shrinkWrapNode = pm.deformer(mesh, type="shrinkWrap")[0]
