@@ -9,7 +9,7 @@ from mgear.vendor.Qt import QtWidgets, QtCore
 from mgear.rigbits import facial_rigger
 
 
-def create_edge_joint(edge, up_vector_position):
+def create_edge_joint(edge, up_vector_position, up_vector_highest=False):
     # Get the vertices the edge is connected to
     edgeVerts = edge.connectedVertices()
 
@@ -42,9 +42,25 @@ def create_edge_joint(edge, up_vector_position):
     # We divide the normal by the total number of vectors
     xVec = (normalsSum / len(normals))
 
+    # The vertex that has the highest position,
+    # will be the vertex that our Y axis will point to
+    upVec = None
+    for i, vert in enumerate(edgeVerts):
+        # We take the first vert as our up vector
+        if i == 0:
+            upVec = edgeVerts[0].getPosition(space="world")
+
+        # And compare the other to it
+        vertPos = edgeVerts[i].getPosition(space="world")
+        if vertPos[1] >= upVec[1]:
+            upVec = vertPos
+
     # This gives us a vector that points from the center
     # of the selection to the highest vertex
-    up_vector_position = up_vector_position - pos
+    if up_vector_highest:
+        up_vector_position = upVec - pos
+    else:
+        up_vector_position = up_vector_position - pos
 
     # We get the z vector from the cross product of our x vector
     # and the up vector

@@ -31,6 +31,7 @@ def _rig(mesh=None,
          shrinkwrap_mesh=None,
          main_control_start=0,
          main_control_frequency=1,
+         up_vector_highest=False,
          prefix="shrinkwrap_rig",
          hook_up_parent=None,
          control_size=1.0,
@@ -63,7 +64,9 @@ def _rig(mesh=None,
         up_vector_position = list(
             set(edge.connectedVertices()) & set(ordered_verts)
         )[0].getPosition(space="world")
-        joint = lib.create_edge_joint(edge, up_vector_position)
+        joint = lib.create_edge_joint(
+            edge, up_vector_position, up_vector_highest
+        )
         pm.rename(
             joint,
             "{0}_shrinkwrap{1:0>2}_jnt".format(
@@ -287,6 +290,14 @@ class ui(lib.settings_dialog):
             partial(self.populate_object, self.shrinkwrap_mesh)
         )
 
+        # up_vector_highest
+        self.up_vector_highest_label = QtWidgets.QLabel("Up Vector Highest:")
+        self.up_vector_highest = QtWidgets.QCheckBox()
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(self.up_vector_highest_label)
+        layout.addWidget(self.up_vector_highest)
+        self.main_layout.addLayout(layout)
+
         # main_control_start
         self.main_control_start_label = QtWidgets.QLabel("Main Control Start:")
         self.main_control_start = QtWidgets.QSpinBox()
@@ -307,7 +318,9 @@ class ui(lib.settings_dialog):
         self.main_layout.addLayout(layout)
 
     def build_rig(self):
-        rig(**facial_rigger.lib.get_settings_from_widget(self))
+        kwargs = facial_rigger.lib.get_settings_from_widget(self)
+        print(kwargs)
+        rig(**kwargs)
 
 
 # Build from json file.
