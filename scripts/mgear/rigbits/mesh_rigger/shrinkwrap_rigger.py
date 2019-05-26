@@ -32,6 +32,7 @@ def _rig(mesh=None,
          main_control_start=0,
          main_control_frequency=1,
          up_vector_highest=False,
+         flip_direction=False,
          prefix="shrinkwrap_rig",
          hook_up_parent=None,
          control_size=1.0,
@@ -41,12 +42,26 @@ def _rig(mesh=None,
 
     mesh = pm.PyNode(mesh)
 
-    boundary_verts = []
     connecting_edges = []
+    boundary_edges = []
     for edge in mesh.edges:
-        if not edge.isOnBoundary():
+        if edge.isOnBoundary():
+            boundary_edges.append(edge)
+        else:
             connecting_edges.append(edge)
-            boundary_verts.append(edge.connectedVertices()[1])
+
+    pm.polySelect(boundary_edges[0], edgeBorder=True)
+    first_boundary_edges = pm.ls(selection=True, flatten=True)
+    second_boundary_edges = list(
+        set(boundary_edges) - set(first_boundary_edges)
+    )
+    boundary_edges = first_boundary_edges
+    if flip_direction:
+        boundary_edges = second_boundary_edges
+    boundary_verts = []
+    for edge in boundary_edges:
+        boundary_verts.extend(edge.connectedVertices())
+    boundary_verts = list(set(boundary_verts))
 
     ordered_verts = [boundary_verts[0]]
     for count in range(0, len(boundary_verts)):
@@ -103,7 +118,21 @@ def _rig(mesh=None,
     pm.rename(master_null, "{0}_master_null".format(prefix))
     pm.parent(master_null, master_group)
 
-    points = [x.getTranslation(space="world") for x in joints]
+    points = []
+    for joint in joints:
+        pm.move(
+            joint,
+            [0, 0, control_offset],
+            relative=True,
+            objectSpace=True
+        )
+        points.append(joint.getTranslation(space="world"))
+        pm.move(
+            joint,
+            [0, 0, -control_offset],
+            relative=True,
+            objectSpace=True
+        )
     master_control = curve.addCurve(
         master_null,
         "{0}_master_ctrl".format(prefix),
@@ -112,12 +141,6 @@ def _rig(mesh=None,
         degree=1
     )
     curve.set_color(master_control, [1, 1, 0])
-    pm.move(
-        master_control,
-        [0, 0, control_offset],
-        relative=True,
-        objectSpace=True
-    )
     pm.makeIdentity(master_control, apply=True)
     master_control.resetFromRestPosition()
     results["controls_set"].append(master_control)
@@ -171,6 +194,7 @@ def _rig(mesh=None,
     parent_index = 0
     # Duplicate the parent controls to loop back around.
     parents = parent_controls + parent_controls
+    parent_constraints = []
     for joint in joints:
         if joint in joints[main_control_start::main_control_frequency]:
             parent_index += 1
@@ -211,11 +235,12 @@ def _rig(mesh=None,
         pm.makeIdentity(control, apply=True)
         control.resetFromRestPosition()
 
-        parent_constraint = pm.parentConstraint(control, joint)
+        pm.parentConstraint(control, joint)
+
         weight = parent_index - (
             float(joints.index(joint)) / main_control_frequency
         )
-        pm.parentConstraint(
+        parent_constraint = pm.parentConstraint(
             parents[parent_index],
             group,
             weight=1.0 - weight,
@@ -227,8 +252,7 @@ def _rig(mesh=None,
             weight=weight,
             maintainOffset=True
         )
-        # Needs to the shortest interpType because else left/right does not act
-        # the same.
+
         parent_constraint.interpType.set(2)
 
     # Setup shrinkwrap
@@ -296,6 +320,12 @@ class ui(lib.settings_dialog):
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self.up_vector_highest_label)
         layout.addWidget(self.up_vector_highest)
+
+        # flip_direction
+        self.flip_direction_label = QtWidgets.QLabel("Flip Direction:")
+        self.flip_direction = QtWidgets.QCheckBox()
+        layout.addWidget(self.flip_direction_label)
+        layout.addWidget(self.flip_direction)
         self.main_layout.addLayout(layout)
 
         # main_control_start

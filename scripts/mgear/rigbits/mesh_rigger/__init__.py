@@ -26,8 +26,6 @@ class ui(MayaQWidgetDockableMixin, QtWidgets.QDialog):
 
 
 def show(*args):
-    reload(shrinkwrap_rigger)
-    reload(point_on_poly_rigger)
     gqt.showDialog(ui)
 
 
