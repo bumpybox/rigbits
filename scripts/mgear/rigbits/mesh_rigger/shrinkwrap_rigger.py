@@ -73,6 +73,10 @@ def _rig(mesh=None,
             if edge in connecting_edges:
                 ordered_edges.append(edge)
 
+    ordered_edges = (
+        ordered_edges[main_control_start:] + ordered_edges[:main_control_start]
+    )
+
     joints = []
     for edge in ordered_edges:
         # Place joints.
@@ -147,12 +151,9 @@ def _rig(mesh=None,
 
     # Create controls with parent and children. Relationship is determined by
     # skipping edges in the ring. Starting point is configurable.
-    if main_control_start / main_control_frequency == 1:
-        main_control_start = 0
-
     # Parent controls
     parent_controls = []
-    for joint in joints[main_control_start::main_control_frequency]:
+    for joint in joints[::main_control_frequency]:
         group = pm.group(
             name="{0}_main{1:0>2}_grp".format(prefix, joints.index(joint)),
             empty=True
@@ -194,9 +195,8 @@ def _rig(mesh=None,
     parent_index = 0
     # Duplicate the parent controls to loop back around.
     parents = parent_controls + parent_controls
-    parent_constraints = []
     for joint in joints:
-        if joint in joints[main_control_start::main_control_frequency]:
+        if joint in joints[::main_control_frequency]:
             parent_index += 1
             continue
 
