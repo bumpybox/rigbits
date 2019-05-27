@@ -349,7 +349,6 @@ class ui(lib.settings_dialog):
 
     def build_rig(self):
         kwargs = facial_rigger.lib.get_settings_from_widget(self)
-        print(kwargs)
         rig(**kwargs)
 
 
