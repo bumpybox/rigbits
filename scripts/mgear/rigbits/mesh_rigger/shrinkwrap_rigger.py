@@ -24,7 +24,9 @@ def rig(*args, **kwargs):
     prefix = ""
     if "prefix" in kwargs:
         prefix = kwargs["prefix"] + "_"
-    lib.rename_by_position(nodes, prefix=prefix, suffix="_ctrl")
+    lib.rename_by_position(
+        nodes, prefix=prefix, suffix="_ctrl"
+    )
 
 
 def _rig(mesh=None,
@@ -43,43 +45,53 @@ def _rig(mesh=None,
     mesh = pm.PyNode(mesh)
 
     connecting_edges = []
-    boundary_edges = []
+    border_edges = []
     for edge in mesh.edges:
         if edge.isOnBoundary():
-            boundary_edges.append(edge)
+            border_edges.append(edge)
         else:
             connecting_edges.append(edge)
 
-    pm.polySelect(boundary_edges[0], edgeBorder=True)
-    first_boundary_edges = pm.ls(selection=True, flatten=True)
-    second_boundary_edges = list(
-        set(boundary_edges) - set(first_boundary_edges)
+    # Split boundary edges into borders
+    first_edge_border = [border_edges[0]]
+    for count in range(0, len(connecting_edges)):
+        for edge in first_edge_border:
+            for connected_edge in edge.connectedEdges():
+                if not connected_edge.isOnBoundary():
+                    continue
+                if connected_edge in first_edge_border:
+                    continue
+
+                first_edge_border.append(connected_edge)
+    second_edge_border = list(
+        set(border_edges) - set(first_edge_border)
     )
-    boundary_edges = first_boundary_edges
+    border_edges = first_edge_border
     if flip_direction:
-        boundary_edges = second_boundary_edges
+        border_edges = second_edge_border
     boundary_verts = []
-    for edge in boundary_edges:
+    for edge in border_edges:
         boundary_verts.extend(edge.connectedVertices())
     boundary_verts = list(set(boundary_verts))
 
+    # Order boundary verts by connection.
     ordered_verts = [boundary_verts[0]]
     for count in range(0, len(boundary_verts)):
         ordered_verts = lib.connected_verts(boundary_verts, ordered_verts)
 
+    # Order connecting edges by ordered boundary verts.
     ordered_edges = []
     for vert in ordered_verts:
         for edge in vert.connectedEdges():
             if edge in connecting_edges:
                 ordered_edges.append(edge)
-
     ordered_edges = (
         ordered_edges[main_control_start:] + ordered_edges[:main_control_start]
     )
 
+    # Place joints.
     joints = []
     for edge in ordered_edges:
-        # Place joints.
         up_vector_position = list(
             set(edge.connectedVertices()) & set(ordered_verts)
         )[0].getPosition(space="world")
