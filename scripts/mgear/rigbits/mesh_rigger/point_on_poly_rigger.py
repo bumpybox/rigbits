@@ -11,11 +11,17 @@ import mgear.core.pyqt as gqt
 
 
 def rig(*args, **kwargs):
+    tolerance = kwargs["tolerance"]
+    kwargs.pop("tolerance")
+
     kwargs, organization_keys = lib.extract_organization_keys(kwargs)
     results = _rig(*args, **kwargs)
     lib.organize_results(results, **organization_keys)
     lib.rename_by_position(
-        results["controls_set"], prefix=kwargs["prefix"] + "_", suffix="_ctrl"
+        results["controls_set"],
+        tolerance=tolerance,
+        prefix=kwargs["prefix"] + "_",
+        suffix="_ctrl"
     )
 
 
@@ -74,8 +80,7 @@ def _rig(verts=[],
         for connected_vert in vert.connectedVertices():
             if connected_vert in look_at_verts:
                 look_at_vert = connected_vert
-        print(look_at_vert)
-        print(vert)
+
         look_at_group = pm.group(
             name="{0}_look_at{1:0>2}_grp".format(
                 prefix, ordered_verts.index(vert)

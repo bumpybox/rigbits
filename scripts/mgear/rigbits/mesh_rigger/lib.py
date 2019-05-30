@@ -273,6 +273,16 @@ class settings_dialog(MayaQWidgetDockableMixin, QtWidgets.QDialog):
             partial(self.populate_object, self.controls_set)
         )
 
+        # tolerance
+        self.tolerance_label = QtWidgets.QLabel("Naming tolerance:")
+        self.tolerance = QtWidgets.QDoubleSpinBox()
+        self.tolerance.setDecimals(3)
+        self.tolerance.setValue(0.001)
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(self.tolerance_label)
+        layout.addWidget(self.tolerance)
+        self.main_layout.addLayout(layout)
+
     def create_body_layout(self):
         pass
 

@@ -11,6 +11,9 @@ from mgear.rigbits import facial_rigger
 
 
 def rig(*args, **kwargs):
+    tolerance = kwargs["tolerance"]
+    kwargs.pop("tolerance")
+
     kwargs, organization_keys = lib.extract_organization_keys(kwargs)
     results = _rig(*args, **kwargs)
     lib.organize_results(results, **organization_keys)
@@ -25,7 +28,7 @@ def rig(*args, **kwargs):
     if "prefix" in kwargs:
         prefix = kwargs["prefix"] + "_"
     lib.rename_by_position(
-        nodes, prefix=prefix, suffix="_ctrl"
+        nodes, tolerance=tolerance, prefix=prefix, suffix="_ctrl"
     )
 
 
