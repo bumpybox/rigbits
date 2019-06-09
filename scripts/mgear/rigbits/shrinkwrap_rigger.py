@@ -276,7 +276,9 @@ def _rig(mesh=None,
 
     results = {"setup_group": [], "controls_group": [], "controls_set": []}
 
-    mesh = pm.PyNode(mesh)
+    mesh = pm.duplicate(mesh)[0]
+    pm.rename(mesh, prefix + "_wrap")
+    results["setup_group"].append(mesh)
 
     connecting_edges = []
     border_edges = []
@@ -988,7 +990,8 @@ class ui(MayaQWidgetDockableMixin, QtWidgets.QDialog):
 
 # Build from json file.
 def rig_from_file(path):
-    rig(**json.load(open(path)))
+    with pm.UndoChunk():
+        rig(**json.load(open(path)))
 
 
 def show(*args):
@@ -996,7 +999,5 @@ def show(*args):
 
 
 if __name__ == "__main__":
-    #with pm.UndoChunk():
-    #    rig_from_file(r"Y:\projects\my_petsaurus\work\assets\peggy\Rigging\peggy_rigging_v001.shrinkwrap\collar.shrinkwrap")
-    win = show()
-    win.import_settings_from_file(r"Y:\projects\my_petsaurus\work\assets\peggy\Rigging\peggy_rigging_v001.shrinkwrap\collar.shrinkwrap")
+    rig_from_file(r"Y:\projects\my_petsaurus\work\assets\peggy\Rigging\peggy_rigging_v001.shrinkwrap\collar.shrinkwrap")
+    #show().import_settings_from_file(r"Y:\projects\my_petsaurus\work\assets\peggy\Rigging\peggy_rigging_v001.shrinkwrap\collar.shrinkwrap")
