@@ -842,6 +842,17 @@ class ui(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         layout.addWidget(self.main_control_frequency)
         self.main_layout.addLayout(layout)
 
+        # mesh_divisions
+        self.mesh_divisions_label = QtWidgets.QLabel(
+            "Mesh Divisions (accuracy):"
+        )
+        self.mesh_divisions = QtWidgets.QSpinBox()
+        self.mesh_divisions.setMinimum(1)
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(self.mesh_divisions_label)
+        layout.addWidget(self.mesh_divisions)
+        self.main_layout.addLayout(layout)
+
         # setup_group
         self.setup_group_label = QtWidgets.QLabel("Setup Group:")
         self.setup_group = QtWidgets.QLineEdit()
