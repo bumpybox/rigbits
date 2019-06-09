@@ -270,7 +270,6 @@ def _rig(mesh=None,
          up_vector_highest=False,
          flip_direction=False,
          prefix="shrinkwrap_rig",
-         hook_up_parent=None,
          control_size=1.0,
          control_offset=0.0,
          mesh_divisions=1):
@@ -363,8 +362,6 @@ def _rig(mesh=None,
 
     master_group = pm.group(name="{0}_master_grp".format(prefix), empty=True)
     master_group.setTranslation(center_position)
-    if hook_up_parent:
-        pm.parentConstraint(master_group, hook_up_parent)
     results["controls_group"].append(master_group)
 
     master_null = pm.duplicate(master_group)[0]
