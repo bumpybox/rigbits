@@ -996,8 +996,3 @@ def rig_from_file(path):
 
 def show(*args):
     return gqt.showDialog(ui)
-
-
-if __name__ == "__main__":
-    rig_from_file(r"Y:\projects\my_petsaurus\work\assets\peggy\Rigging\peggy_rigging_v001.shrinkwrap\collar.shrinkwrap")
-    #show().import_settings_from_file(r"Y:\projects\my_petsaurus\work\assets\peggy\Rigging\peggy_rigging_v001.shrinkwrap\collar.shrinkwrap")
