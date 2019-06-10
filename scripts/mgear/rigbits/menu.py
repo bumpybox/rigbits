@@ -53,7 +53,7 @@ def install():
         ("-----", None),
         ("Facial Rigger", facial_rigger.show),
         ("-----", None),
-        ("Mesh Rigger", shrinkwrap_rigger.show),
+        ("Shrinkwrap Rigger", shrinkwrap_rigger.show),
         ("-----", None),
         ("Proxy Slicer", proxySlicer.slice),
         ("Proxy Slicer Parenting", partial(proxySlicer.slice, True)),
