@@ -982,7 +982,7 @@ class ui(MayaQWidgetDockableMixin, QtWidgets.QDialog):
         if not file_path:
             return
 
-        self.import_settings_from_file(file_path, self)
+        self.import_settings_from_file(file_path)
 
     def import_settings_from_file(self, file_path):
         facial_rigger.lib.import_settings_from_file(file_path, self)
