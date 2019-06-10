@@ -574,8 +574,8 @@ def _rig(mesh=None,
                 verts,
                 positive_verts,
                 prefix,
-                control_size - 1,
-                control_offset - 1
+                control_size / 2.0,
+                control_offset
             )
         )
     else:
@@ -584,8 +584,8 @@ def _rig(mesh=None,
                 verts,
                 negative_verts,
                 prefix,
-                control_size - 1,
-                control_offset - 1
+                control_size / 2.0,
+                control_offset
             )
         )
 
@@ -603,10 +603,6 @@ def _rig_pop(verts=[],
              prefix="pop_rig",
              control_size=1.0,
              control_offset=0.0):
-
-    # Control size cannot be zero.
-    if control_size == 0:
-        control_size = 1.0
 
     results = {
         "setup_group": [],
@@ -708,7 +704,9 @@ def _rig_pop(verts=[],
 
         pm.scale(control, [control_size, control_size, control_size])
         pm.move(
-            control, [0, 0, control_offset], relative=True, objectSpace=True
+            control, [0, 0, (control_offset * (1.0 / control_size)) / 2],
+            relative=True,
+            objectSpace=True
         )
         pm.makeIdentity(control, apply=True)
         control.resetFromRestPosition()
