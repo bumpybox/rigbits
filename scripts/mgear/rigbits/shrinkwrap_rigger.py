@@ -604,6 +604,10 @@ def _rig_pop(verts=[],
              control_size=1.0,
              control_offset=0.0):
 
+    # Control size cannot be zero.
+    if control_size == 0:
+        control_size = 1.0
+
     results = {
         "setup_group": [],
         "deformers_group": [],
