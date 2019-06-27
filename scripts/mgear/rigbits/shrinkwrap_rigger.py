@@ -503,6 +503,11 @@ def _rig(mesh=None,
 
         parent_constraint.interpType.set(2)
 
+    # Storing vert pairs before subdivding the mesh.
+    vert_pairs = []
+    for edge in ordered_edges:
+        vert_pairs.append(edge.connectedVertices())
+
     # Adding mesh divisions.
     pm.polySmooth(mesh, divisions=mesh_divisions)
 
@@ -523,19 +528,42 @@ def _rig(mesh=None,
 
     # Setup point on poly controls.
     # Getting edge loop verts.
-    closest_verts = []
-    for joint in joints:
-        position = joint.getTranslation(space="world")
-        closest_verts.append(
-            pm.PyNode(getClosestVertex(mesh.name(), position))
-        )
-
-    for count in range(0, len(closest_verts)):
+    middle_verts = []
+    for pair in vert_pairs:
+        pm.select(clear=True)
         pm.polySelect(
             mesh,
             shortestEdgePath=(
-                int(closest_verts[count - 1].name()[-3:-1]),
-                int(closest_verts[count].name()[-3:-1])
+                pair[0].index(),
+                pair[1].index()
+            )
+        )
+        verts = pm.ls(
+            pm.polyListComponentConversion(
+                pm.ls(selection=True, flatten=True),
+                fromEdge=True,
+                toVertex=True
+            ),
+            flatten=True
+        )
+        edge_count = len(pm.ls(selection=True, flatten=True))
+        connected_verts = [pair[0]]
+        for count in range(0, edge_count / 2):
+            nearest_verts = set(
+                pm.ls(connected_verts[-1].connectedVertices(), flatten=True)
+            )
+            familiar_verts = nearest_verts & set(verts)
+            connected_verts.append(
+                list(familiar_verts - set(connected_verts))[0]
+            )
+        middle_verts.append(connected_verts[-1])
+
+    pm.select(clear=True)
+    for count in range(0, len(middle_verts)):
+        pm.polySelect(
+            mesh,
+            shortestEdgePath=(
+                middle_verts[count - 1].index(), middle_verts[count].index()
             )
         )
 
@@ -998,3 +1026,7 @@ def rig_from_file(path):
 
 def show(*args):
     return gqt.showDialog(ui)
+
+
+rig_from_file(r"Y:\my_petsaurus\work\library\topsy\Rigging\topsy_rigging_v010.shrinkwrap\collar.shrinkwrap")
+#show().import_settings_from_file(r"Y:\my_petsaurus\work\library\topsy\Rigging\topsy_rigging_v010.shrinkwrap\collar.shrinkwrap")
