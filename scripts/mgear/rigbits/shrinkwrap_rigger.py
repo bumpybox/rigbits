@@ -1026,7 +1026,3 @@ def rig_from_file(path):
 
 def show(*args):
     return gqt.showDialog(ui)
-
-
-rig_from_file(r"Y:\my_petsaurus\work\library\topsy\Rigging\topsy_rigging_v010.shrinkwrap\collar.shrinkwrap")
-#show().import_settings_from_file(r"Y:\my_petsaurus\work\library\topsy\Rigging\topsy_rigging_v010.shrinkwrap\collar.shrinkwrap")
