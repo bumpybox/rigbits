@@ -4,55 +4,11 @@ import json
 
 import pymel.core as pm
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
-import maya.api.OpenMaya as om
-from maya import cmds
 
 from mgear.core import skin, curve, icon
 from mgear.vendor.Qt import QtWidgets, QtCore
 import mgear.core.pyqt as gqt
 from mgear.rigbits import facial_rigger, alignToPointsLoop
-
-
-def getClosestVertex(mayaMesh, pos):
-    """
-    Returns the closest vertex given a mesh and a position [x,y,z] in world
-    space.
-    Uses om.MfnMesh.getClosestPoint() returned face ID and iterates through
-    face's vertices.
-    """
-    # Using MVector type to represent position.
-    mVector = om.MVector(pos)
-    selectionList = om.MSelectionList()
-    selectionList.add(mayaMesh)
-    dPath = selectionList.getDagPath(0)
-    mMesh = om.MFnMesh(dPath)
-
-    # Getting closest face ID.
-    ID = mMesh.getClosestPoint(om.MPoint(mVector), space=om.MSpace.kWorld)[1]
-    # Face's vertices list.
-    list = cmds.ls(
-        cmds.polyListComponentConversion(
-            mayaMesh+'.f['+str(ID)+']', ff=True, tv=True
-        ),
-        flatten=True
-    )
-
-    # Setting vertex [0] as the closest one.
-    d = mVector-om.MVector(cmds.xform(list[0], t=True, ws=True, q=True))
-
-    # Using distance squared to compare distance.
-    smallestDist2 = d.x*d.x+d.y*d.y+d.z*d.z
-    closest = list[0]
-
-    # Iterating from vertex [1].
-    for i in range(1, len(list)):
-        d = mVector-om.MVector(cmds.xform(list[i], t=True, ws=True, q=True))
-        d2 = d.x*d.x+d.y*d.y+d.z*d.z
-        if d2 < smallestDist2:
-            smallestDist2 = d2
-            closest = list[i]
-
-    return closest
 
 
 def create_edge_joint(edge, up_vector_position, up_vector_highest=False):
