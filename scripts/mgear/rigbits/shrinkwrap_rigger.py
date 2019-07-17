@@ -5,10 +5,10 @@ import json
 import pymel.core as pm
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
-from mgear.core import skin, curve, icon
+from mgear.core import skin, curve, icon, vector
 from mgear.vendor.Qt import QtWidgets, QtCore
 import mgear.core.pyqt as gqt
-from mgear.rigbits import facial_rigger, alignToPointsLoop
+from mgear.rigbits import facial_rigger
 
 
 def create_edge_joint(edge, up_vector_position, up_vector_highest=False):
@@ -464,8 +464,15 @@ def _rig(mesh=None,
     for edge in ordered_edges:
         vert_pairs.append(edge.connectedVertices())
 
+    border_verts = pm.ls(
+        pm.polyListComponentConversion(
+            border_edges, fromEdge=True, toVertex=True
+        ),
+        flatten=True
+    )
+
     # Adding mesh divisions.
-    pm.polySmooth(mesh, divisions=mesh_divisions)
+    pm.polySmooth(mesh, divisions=mesh_divisions, keepBorder=False)
 
     # Setup shrinkwrap
     shrinkWrapNode = pm.deformer(mesh, type="shrinkWrap")[0]
@@ -531,47 +538,83 @@ def _rig(mesh=None,
     )
 
     # Get look at verts.
-    positive_verts = []
-    negative_verts = []
-    for vert in verts:
-        connected_verts = pm.ls(vert.connectedVertices(), flatten=True)
-        look_at_verts = list(set(connected_verts) - set(verts))
-
-        align_group = pm.group(empty=True)
-        alignToPointsLoop(points=connected_verts, loc=align_group)
-        for look_at_vert in look_at_verts:
-            group = pm.group(empty=True)
-            group.setTranslation(look_at_vert.getPosition(space="world"))
-            pm.parent(group, align_group)
-            if group.tx.get() > 0:
-                positive_verts.append(look_at_vert)
+    edges = []
+    for vert in border_verts:
+        shortest_distance = None
+        targets = list(border_verts)
+        targets.remove(vert)
+        for target in targets:
+            pm.select(clear=True)
+            pm.polySelect(
+                mesh,
+                shortestEdgePath=(
+                    vert.index(),
+                    target.index()
+                )
+            )
+            selection = pm.ls(selection=True, flatten=True)
+            if shortest_distance is None:
+                shortest_distance = len(selection)
+                vert_edges = selection
             else:
-                negative_verts.append(look_at_vert)
-            pm.delete(group)
-        pm.delete(align_group)
+                if len(selection) < shortest_distance:
+                    shortest_distance = len(selection)
+                    vert_edges = selection
+                if len(selection) == shortest_distance:
+                    vert_edges.extend(selection)
+        edges.extend(vert_edges)
+
+    border_verts = pm.ls(
+        pm.polyListComponentConversion(
+            edges, fromEdge=True, toVertex=True
+        ),
+        flatten=True
+    )
+
+    look_at_verts = []
+    for middle_vert in verts:
+        closest_distance = None
+        closest_border_vert = None
+        for border_vert in border_verts:
+            distance = vector.getDistance(
+                middle_vert.getPosition(space="world"),
+                border_vert.getPosition(space="world")
+            )
+            if closest_distance is None:
+                closest_distance = distance
+                closest_border_vert = border_vert
+            if distance < closest_distance:
+                closest_distance = distance
+                closest_border_vert = border_vert
+
+        connected_verts = (
+            set(pm.ls(middle_vert.connectedVertices(), flatten=True)) -
+            set(middle_verts)
+        )
+        closest_distance = None
+        closest_connected_vert = None
+        for connected_vert in connected_verts:
+            distance = vector.getDistance(
+                closest_border_vert.getPosition(space="world"),
+                connected_vert.getPosition(space="world")
+            )
+            if closest_distance is None:
+                closest_distance = distance
+                closest_connected_vert = connected_vert
+            if distance < closest_distance:
+                closest_distance = distance
+                closest_connected_vert = connected_vert
+
+        look_at_verts.append(closest_connected_vert)
 
     # Rig point on poly controls.
-    pop_results = {}
-    if flip_direction:
-        pop_results.update(
-            _rig_pop(
-                verts,
-                positive_verts,
-                prefix,
-                control_size / 2.0,
-                control_offset
-            )
-        )
-    else:
-        pop_results.update(
-            _rig_pop(
-                verts,
-                negative_verts,
-                prefix,
-                control_size / 2.0,
-                control_offset
-            )
-        )
+    pop_results = _rig_pop(
+        verts,
+        look_at_verts,
+        prefix,
+        control_size / 2.0,
+        control_offset
+    )
 
     results["setup_group"].extend(pop_results["setup_group"])
     results["controls_group"].extend(pop_results["controls_group"])
