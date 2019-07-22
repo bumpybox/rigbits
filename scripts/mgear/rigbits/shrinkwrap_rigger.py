@@ -481,13 +481,11 @@ def _rig(mesh=None,
 
     master_control.addAttr(
         "wobble_smooth",
-        usedAsProxy=True,
-        keyable=True,
         min=0,
         max=10
     )
-    shrinkWrapNode.targetSmoothLevel.connect(master_control.wobble_smooth)
-    master_control.wobble_smooth.set(2)
+    master_control.wobble_smooth >> shrinkWrapNode.targetSmoothLevel
+    master_control.wobble_smooth.set(keyable=False, channelBox=True)
 
     # Setup point on poly controls.
     # Getting edge loop verts.
