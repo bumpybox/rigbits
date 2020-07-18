@@ -1021,5 +1021,11 @@ def rig_from_file(path):
         rig(**json.load(open(path)))
 
 
+# Build from data.
+def rig_from_data(data):
+    with pm.UndoChunk():
+        rig(**data)
+
+
 def show(*args):
     return gqt.showDialog(ui)
